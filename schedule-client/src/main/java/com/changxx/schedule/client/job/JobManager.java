@@ -1,7 +1,9 @@
 package com.changxx.schedule.client.job;
 
 import com.changxx.schedule.constant.Constant;
+import com.changxx.schedule.curator.CommonListener;
 import com.changxx.schedule.curator.CuratorSupport;
+import com.changxx.schedule.pool.ThreadPool;
 import com.changxx.schedule.util.FastJsonUtil;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
@@ -50,7 +52,7 @@ public class JobManager {
         JobManager.initScheduler();
         boolean flag = false;
         try {
-            JobDetail job = JobBuilder.newJob(ScheduleJob.class).withIdentity(task.getTaskId() + "", Scheduler.DEFAULT_GROUP).build();
+            org.quartz.JobDetail job = JobBuilder.newJob(JobDetail.class).withIdentity(task.getTaskId() + "", Scheduler.DEFAULT_GROUP).build();
             CronTrigger trigger = TriggerBuilder.newTrigger().withIdentity(task.getTaskId() + "").withSchedule(CronScheduleBuilder.cronSchedule(task.getCronExpression())).build();
             scheduler.scheduleJob(job, trigger);
             flag = true;
@@ -107,6 +109,7 @@ public class JobManager {
                     try {
                         valueString = CuratorSupport.getData(zkPath + "/" + taskId);
                         ScheduleTask result = FastJsonUtil.parse(valueString, ScheduleTask.class);
+                        CommonListener.manualListener(zkPath, taskId);
                         items.add(result);
                     } catch (Exception e) {
                         log.error("[GET_TASK_ERROR]将zk中的获取的数据转成任务对象时出错.valueString:" + valueString, e);
@@ -119,5 +122,16 @@ public class JobManager {
             log.error("[GET_TASK_ERROR]从zk中获取任务列表失败.", e);
         }
         return items;
+    }
+
+    /**
+     * 手动触发任务
+     */
+    public static void doManualTask(ManualTask manualTask) {
+        try {
+            ThreadPool.getInstance().exec(new ManualTaskExcutor(manualTask));
+        } catch (Exception e) {
+            log.error("[DO_MANUAL_ERROR]Exception occurs while firing Job[" + manualTask + "] on Manual", e);
+        }
     }
 }

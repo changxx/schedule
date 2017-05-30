@@ -1,13 +1,12 @@
 package com.changxx.schedule.job;
 
-import com.changxx.schedule.client.job.JobManager;
-import com.changxx.schedule.client.job.ScheduleTask;
-import com.changxx.schedule.constant.Constant;
 import org.junit.Test;
-import org.quartz.CronTrigger;
-import org.quartz.Trigger;
-import org.quartz.TriggerKey;
+import org.quartz.*;
+import org.quartz.impl.StdSchedulerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -18,27 +17,56 @@ import java.util.Set;
  */
 public class JobManagerTest {
 
+    private static final Logger log = LoggerFactory.getLogger(JobManagerTest.class);
+
+    private static Scheduler scheduler;
+
     @Test
     public void jobAdd() throws Exception {
-        ScheduleTask task = new ScheduleTask();
-        task.setTaskId("task-test4");
-        task.setCronExpression("0/5 * * * * ? *");
-        task.setTaskType(Constant.TASK_TYPE_ALL);
-        boolean flag = JobManager.addNewJob(task);
-        System.out.println(flag);
+        JobManagerTest.initScheduler();
 
-        Set<TriggerKey> triggerKeyList = JobManager.getScheduler().getTriggerKeys(null);
+        String taskId = "task4";
+        String cron = "0/5 * * * * ? *";
+
+        JobDetail job = JobBuilder.newJob(ScheduleJobDetail.class).withIdentity(taskId + "", Scheduler.DEFAULT_GROUP).build();
+        CronTrigger trigger = TriggerBuilder.newTrigger().withIdentity(taskId + "").withSchedule(CronScheduleBuilder.cronSchedule(cron)).build();
+        scheduler.scheduleJob(job, trigger);
+        log.info("[Deploy]Success to regist a new task, " + taskId);
+
+        Set<TriggerKey> triggerKeyList = scheduler.getTriggerKeys(null);
 
         for (TriggerKey triggerKey : triggerKeyList) {
-            Trigger trigger = JobManager.getScheduler().getTrigger(triggerKey);
+            Trigger triggerTemp = scheduler.getTrigger(triggerKey);
             System.out.print("task：" + trigger.getJobKey());
-            if (trigger instanceof CronTrigger) {
-                CronTrigger cronTrigger = (CronTrigger) trigger;
+            if (triggerTemp instanceof CronTrigger) {
+                CronTrigger cronTrigger = (CronTrigger) triggerTemp;
                 System.out.println(" " + cronTrigger.getCronExpression());
             }
         }
 
         Thread.sleep(Integer.MAX_VALUE);
+    }
+
+    public static void initScheduler() {
+        if (scheduler == null) {
+            synchronized (Scheduler.class) {
+                if (scheduler == null) {
+                    try {
+                        String threadCount = "10";
+                        String threadPoolClass = "org.quartz.simpl.SimpleThreadPool";
+                        String threadPriority = "5";
+                        Properties properties = new Properties();
+                        properties.put("org.quartz.threadPool.threadCount", threadCount);
+                        properties.put("org.quartz.threadPool.class", threadPoolClass);
+                        properties.put("org.quartz.threadPool.threadPriority", threadPriority);
+                        scheduler = (new StdSchedulerFactory(properties)).getScheduler();
+                        scheduler.start();
+                    } catch (SchedulerException e) {
+                        log.error("Can't instantiate scheduler, ", e);
+                    }
+                }
+            }
+        }
     }
 
 }

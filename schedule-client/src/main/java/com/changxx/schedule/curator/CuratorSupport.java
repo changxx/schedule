@@ -2,6 +2,7 @@ package com.changxx.schedule.curator;
 
 import com.changxx.schedule.ScheduleClientFactory;
 import com.changxx.schedule.client.job.JobManager;
+import com.changxx.schedule.constant.Constant;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
@@ -14,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * CuratorSupport
@@ -177,6 +177,20 @@ public class CuratorSupport {
         }
     }
 
+    public static void deleteWithChildren(final String znode) {
+        check();
+        try {
+            if (null != client.checkExists().forPath(znode)) {
+                client.delete().deletingChildrenIfNeeded().forPath(znode);
+            }
+        } catch (final KeeperException.NoNodeException ex) {
+            //CHECKSTYLE:OFF
+        } catch (final Exception ex) {
+            //CHECKSTYLE:ON
+            throw new RuntimeException(ex);
+        }
+    }
+
     public static List<String> getChildren(final String znode) {
         check();
         try {
@@ -193,15 +207,29 @@ public class CuratorSupport {
         }
     }
 
-    public static boolean acquireLock(final String znode, long second) {
+    public static boolean acquireLock(final String znode, String taskId, long runTime, LockExecute lockExecute, Object... objects) {
+        // zk上每次任务执行的监听结点：/cron/{group}/{taskId}/{runtime}
+        String root = "/" + Constant.KSCHEDULE_GROUP_NAME_2 + Constant.NODE_TASK + "/" + taskId + "/" + runTime;
         InterProcessMutex lock = new InterProcessMutex(client, znode);
         try {
-            return lock.acquire(second, TimeUnit.SECONDS);
+            lock.acquire();
+            String taskStat = CuratorSupport.getData(root);
+            log.info("获得锁, lockPath: {}, taskStat: {}", znode, taskStat);
+            if (taskStat == null && checkExists(znode)) {
+                CuratorSupport.create(root, Constant.TASK_DOING, CreateMode.PERSISTENT);
+                lockExecute.execute(objects);
+                deleteWithChildren(znode);
+                CuratorSupport.update(root, Constant.TASK_DONE);
+            }
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
             try {
-                lock.release();
+                if (lock.isAcquiredInThisProcess()) {
+//                    log.info("释放锁, lockPath: {}", znode);
+                    lock.release();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }

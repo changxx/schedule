@@ -1,5 +1,6 @@
 package com.changxx.schedule.console;
 
+import com.changxx.schedule.client.job.ManualTask;
 import com.changxx.schedule.client.job.ScheduleTask;
 import com.changxx.schedule.constant.Constant;
 import com.changxx.schedule.curator.CuratorSupport;
@@ -51,5 +52,29 @@ public class TaskService {
         return true;
     }
 
+    /**
+     * 删除
+     * /root/{group}/task/{taskId}
+     */
+    public static boolean deleteZk(ScheduleTask task) {
+        String zkPath = Constant.NODE_SEPARATE + Constant.KSCHEDULE_GROUP_NAME_2;
+        zkPath = zkPath + Constant.NODE_TASK;
+        zkPath = zkPath + Constant.NODE_SEPARATE + task.getTaskId();
+        CuratorSupport.deleteWithChildren(zkPath);
+        return true;
+    }
+
+    /**
+     * 删除
+     * 路径:/root/{group}/task/{taskId}/manual
+     */
+    public static boolean manualExecute(ManualTask task) {
+        String zkPath = Constant.NODE_SEPARATE + Constant.KSCHEDULE_GROUP_NAME_2;
+        zkPath = zkPath + Constant.NODE_TASK;
+        zkPath = zkPath + Constant.NODE_SEPARATE + task.getTaskId();
+        zkPath = zkPath + Constant.NODE_TASK_MANUAL;
+        CuratorSupport.update(zkPath, FastJsonUtil.toJSONString(task));
+        return true;
+    }
 
 }
