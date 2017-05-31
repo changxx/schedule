@@ -99,7 +99,8 @@ public class CuratorSupport {
     public static boolean checkExists(final String znode) {
         check();
         try {
-            return null != client.checkExists().forPath(znode);
+            boolean result = null != client.checkExists().forPath(znode);
+            return result;
             //CHECKSTYLE:OFF
         } catch (final Exception ex) {
             //CHECKSTYLE:ON
@@ -208,18 +209,18 @@ public class CuratorSupport {
     }
 
     public static boolean acquireLock(final String znode, String taskId, long runTime, LockExecute lockExecute, Object... objects) {
-        // zk上每次任务执行的监听结点：/cron/{group}/{taskId}/{runtime}
-        String root = "/" + Constant.KSCHEDULE_GROUP_NAME_2 + Constant.NODE_TASK + "/" + taskId + "/" + runTime;
+        int fireType = (int) objects[1];
+        // zk上每次任务执行的监听结点：/schedule/{group}/task/{taskId}/{firetype}/{runtime}
+        String path = "/" + Constant.KSCHEDULE_GROUP_NAME_2 + Constant.NODE_TASK + "/" + taskId + Constant.getFirePath(fireType) + "/" + runTime;
         InterProcessMutex lock = new InterProcessMutex(client, znode);
         try {
             lock.acquire();
-            String taskStat = CuratorSupport.getData(root);
+            String taskStat = CuratorSupport.getData(path);
             log.info("获得锁, lockPath: {}, taskStat: {}", znode, taskStat);
-            if (taskStat == null && checkExists(znode)) {
-                CuratorSupport.create(root, Constant.TASK_DOING, CreateMode.PERSISTENT);
+            if (taskStat == null || taskStat.equals(Constant.TASK_INIT) && checkExists(znode)) {
+                CuratorSupport.update(path, Constant.TASK_DOING);
                 lockExecute.execute(objects);
-                deleteWithChildren(znode);
-                CuratorSupport.update(root, Constant.TASK_DONE);
+                CuratorSupport.update(path, Constant.TASK_DONE);
             }
             return true;
         } catch (Exception e) {

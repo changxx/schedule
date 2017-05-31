@@ -28,16 +28,16 @@ public class JobDetail implements Job {
     public void execute(JobExecutionContext context) throws JobExecutionException {
         String taskId = context.getJobDetail().getKey().getName();
         ScheduleTask scheduleTask = JobManager.getTask(taskId);
-        JobDetail.checkForDoTask(scheduleTask, Constant.FIRE_TYPE_CRON, context.getFireTime());
+        JobDetail.checkForDoTask(scheduleTask, Constant.FIRE_TYPE_CRON, context.getScheduledFireTime());
     }
 
     public static void checkForDoTask(ScheduleTask scheduleTask, int fireType, Date runTime) {
         //1.执行方式校验，执行方式-都不执行 则直接返回
-        if (Constant.RUN_ON_NONE == scheduleTask.getTaskType()) {
+        if (scheduleTask.getTaskType() == null || Constant.RUN_ON_NONE == scheduleTask.getTaskType()) {
             return;
         }
 
-        //2.在zk上创建任务节点/kschedule/{group}/task/{taskId}/cron/{runtime}
+        //2.在zk上创建任务节点/schedule/{group}/task/{taskId}/cron/{runtime}
         try {
             JobDetail.createFireTimeNode(scheduleTask.getTaskId(), runTime, fireType);
         } catch (Exception e) {
@@ -68,15 +68,14 @@ public class JobDetail implements Job {
 
 
     /**
-     * 在zk上创建任务节点/root/product/group/task/taskId/cron/firetime
+     * 在zk上创建任务节点/schedule/group/task/taskId/cron/firetime
      *
      * @param taskId   任务ID
      * @param runTime  执行时间
      * @param fireType 执行方式 0-手动，1-定时，2-启动
      */
     public static boolean createFireTimeNode(String taskId, Date runTime, int fireType) throws Exception {
-        String root = Constant.NODE_SEPARATE + Constant.KSCHEDULE_GROUP_NAME_2 + Constant.NODE_TASK + Constant.NODE_SEPARATE + taskId;
-        String firePath = root + Constant.getFirePath(fireType);
+        String firePath = Constant.NODE_SEPARATE + Constant.KSCHEDULE_GROUP_NAME_2 + Constant.NODE_TASK + Constant.NODE_SEPARATE + taskId + Constant.getFirePath(fireType);
         String zkPath = firePath + Constant.NODE_SEPARATE + runTime.getTime();
         if (!CuratorSupport.checkExists(firePath)) {
             CuratorSupport.create(firePath);
@@ -94,8 +93,6 @@ public class JobDetail implements Job {
         try {
             if (CuratorSupport.checkExists(root)) {
                 JobDetail.doJob(task.getTaskId(), fireType, runTime);
-                // 修改任务节点状态为DONE 并写日志 TODO
-                // curatorManager.taskLog(task, fireType, Constant.TASK_DONE, runTime, root, null, desc, false);
 
             }
         } catch (Exception e) {

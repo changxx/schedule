@@ -1,7 +1,6 @@
 package com.changxx.schedule.constant;
 
 import com.changxx.schedule.util.IpUtil;
-import org.springframework.context.ApplicationContext;
 
 
 public final class Constant {
@@ -11,10 +10,6 @@ public final class Constant {
     public static final int RUN_ON_ALL = 2;// 执行方式-所有机器都执行
     public static final int RUN_ON_ASSIGN = 3;// 执行方式-指定机器上全部执行
     public static final int RUN_ON_ASSIGN_ONE = 4;// 执行方式-指定机器上只有一台全部执行
-
-    public static ApplicationContext applicationContext;
-
-    public static final int FIRE_ON_STARTUP = 1;// 启动执行标识
 
     public static final String KSCHEDULE_GROUP_NAME_2 = "changxx";// 资源配置-分组信息
 

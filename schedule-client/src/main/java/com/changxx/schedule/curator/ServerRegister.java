@@ -14,7 +14,7 @@ public class ServerRegister {
 
     /**
      * 向zk注册服务机器名
-     * 注册临时节点:/kschedule/{group}/servers/{hostName}
+     * 注册临时节点:/schedule/{group}/servers/{hostName}
      */
     public static void register() {
         String zkPath1 = Constant.NODE_SEPARATE + Constant.KSCHEDULE_GROUP_NAME_2;

@@ -39,7 +39,7 @@ public class TaskServiceTest {
     @Test
     public void test_delete() {
         ScheduleTask task = new ScheduleTask();
-        task.setTaskId("task-test7");
+        task.setTaskId("task-test-one");
         task.setCronExpression("0/10 * * * * ? *");
         task.setTaskType(Constant.TASK_TYPE_ALL);
         boolean flag = TaskService.deleteZk(task);
