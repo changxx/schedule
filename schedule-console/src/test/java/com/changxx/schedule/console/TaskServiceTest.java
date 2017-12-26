@@ -19,9 +19,9 @@ public class TaskServiceTest {
     @Test
     public void test_add() {
         ScheduleTask task = new ScheduleTask();
-        task.setTaskId("task-test-one");
+        task.setTaskId("task-test-two");
         task.setCronExpression("0/10 * * * * ? *");
-        task.setTaskType(Constant.TASK_TYPE_ONE);
+        task.setTaskType(Constant.TASK_TYPE_ALL);
         boolean flag = TaskService.addToZk(task);
         System.out.println(flag);
     }
@@ -49,7 +49,7 @@ public class TaskServiceTest {
     @Test
     public void test_manualExecute() {
         ManualTask task = new ManualTask();
-        task.setTaskId("task-test-one");
+        task.setTaskId("task-test-two");
         task.setTime(System.currentTimeMillis());
         task.setServers(new ArrayList<>(Arrays.asList(new String[]{""})));
         TaskService.manualExecute(task);

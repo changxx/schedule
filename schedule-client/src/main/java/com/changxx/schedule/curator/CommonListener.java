@@ -25,7 +25,7 @@ public class CommonListener {
 
     /**
      * 监听任务节点下子节点的变化情况
-     * 监听路径:/schedule/{group}/task
+     * 监听路径:/schedule/{group}/task/
      */
     public static void tasksListener() {
         String zkPath2 = Constant.NODE_SEPARATE + Constant.KSCHEDULE_GROUP_NAME_2 + Constant.NODE_TASK;

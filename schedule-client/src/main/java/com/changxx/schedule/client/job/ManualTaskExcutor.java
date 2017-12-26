@@ -9,9 +9,6 @@ import java.util.Date;
 
 /**
  * 手动触发的TASK线程，由ThreadPool线程池管理
- *
- * @author yangkaiming<hzyangkaiming@corp.netease.com>
- * @since 2016年3月30日
  */
 public class ManualTaskExcutor extends Thread {
 
